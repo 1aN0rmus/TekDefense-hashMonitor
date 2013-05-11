@@ -14,6 +14,7 @@ Changelog:
 .2
 [+] Optimize database for faster hash insertion
 [+] Added option to specify a database name and path
+[+] Added error handling to the hash insert to DB
 
 .1 
 [+] Initial Release
@@ -24,7 +25,7 @@ TODO
 
 import twitter, sqlite3, re, datetime, httplib2, argparse, sys
 
-listMonitor = ['Dumpmon', 'PastebinDorks']
+listMonitor = ['Dumpmon', 'PastebinDorks', 'TekDefense']
 listURLs = []
 api = twitter.Api()
 hashMonDB = 'hashMon.db'
@@ -120,9 +121,12 @@ def hashes2DB():
         cur.execute('CREATE TABLE IF NOT EXISTS HASHES(HASH TEXT PRIMARY KEY, TYPE TEXT)')
         con.commit()
         for i in listResults:
-            n = n + 1
-            print '[+] Adding ' + i[0] + ' into the DB'
-            cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
+            try:
+                n = n + 1
+                print '[+] Adding ' + i[0] + ' to the DB'
+                cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
+            except:
+                print '[-] Hash already exists in database'
         print '[+] Added ' + str(n) + ' Hashes to the Database'
     con.commit()
     con.close()
