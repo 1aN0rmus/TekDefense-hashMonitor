@@ -16,6 +16,9 @@ Changelog:
 [+] Added option to specify a database name and path
 [+] Added error handling to the hash insert to DB
 [+] Optimized link2DB function and added error handling
+[+] Fixed a problem with listing hashes
+[+] Added a summary option
+[+] Started an account function, not done yet though!
 
 .1 
 [+] Initial Release
@@ -45,6 +48,8 @@ parser = argparse.ArgumentParser(description='hashMonitor is a tool that will co
 parser.add_argument('-d', '--database', help='This option is used to specify a database name. ./hashMonitor.py -d databaseName.db')
 parser.add_argument('-o', '--output', help='This option will output the results to a file. ./hashMonitor.py -o output.txt')
 parser.add_argument('-l', '--list', help='This option will return a list of all the hashes in the database. Use ALL, MD5, SHA1, or SHA256. ./hashMonitor.py -l MD5')
+parser.add_argument('-s', '--summary', action='store_true', default=False, help='This option will display stats on URLs scanned and Hashes collected ./hashMonitor.py -s')
+parser.add_argument('-a', '--add', help='This option will add a twitter account to the monitor db ./hashMonitor.py -a TWITTERHANDLE')
 args = parser.parse_args()
 
 if args.output:
@@ -127,7 +132,7 @@ def hashes2DB():
                 print '[+] Adding ' + i[0] + ' to the DB'
                 cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
             except:
-                print '[-] Hash already exists in database'
+                print '[-] ' + i[0] + 'already exists in database'
         print '[+] Added ' + str(n) + ' Hashes to the Database'
     con.commit()
     con.close()
@@ -148,17 +153,54 @@ def listHashes():
                 for i in results:
                     print i[0]
 
-#def accounts():
-    #con = sqlite3.connect(hashMonDB)
-    #with con:
-        #cur = con.cursor()
-        #cur.execute('CREATE TABLE IF NOT EXISTS ACCOUNTS(Id INTEGER PRIMARY KEY, ACCOUNT TEXT)')
-        #con.commit()
+def accounts():
+    con = sqlite3.connect(hashMonDB)
+    with con:
+        cur = con.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS ACCOUNTS(ACCOUNT TEXT PRIMARY KEY)')
+        con.commit()
+        for i in listMonitor:
+            try:
+                cur.execute("INSERT INTO ACCOUNTS(ACCOUNT) VALUES(?)", (i,))
+                print '[+] ' + i + ' has been added to the Monitor list'
+            except:
+                print '[+] Monitoring ' + i
+        con.commit()
+        if args.add:
+            twitterHandle = args.add
+            try:
+                cur.execute("INSERT INTO ACCOUNTS(ACCOUNT) VALUES(?)", (twitterHandle,))
+                print '[+] ' + twitterHandle + ' has been added to the Monitor list'
+            except:
+                print '[+] Monitoring ' + twitterHandle
+def summary():
+    con = sqlite3.connect(hashMonDB)
+    with con:
+        cur = con.cursor()
+        cur.execute('SELECT TYPE, COUNT(HASH) FROM HASHES GROUP BY TYPE')
+        rows = cur.fetchall()
+        num = 0
+        for row in rows:
+            num = num + row[1]
+            print '[+] ' + row[0] + ': ' + str(row[1])
+        print '[+] You have collected a total of ' + str(num) + ' hashes in this database!'
+        cur.execute('SELECT URL, COUNT(URL) FROM URLS')
+        rows = cur.fetchall()
+        num = 0
+        for row in rows:
+            num = num + row[1]
+        print '[+] You have scraped a total of ' + str(num) + ' URLs listed in this database!'
 
 print '[*] Running hashMonitor.py'
-twitterLinkPull()
-links2DB()
-collectHashes()
-hashes2DB()
-listHashes()
 
+if args.list:
+    listHashes()
+elif args.summary == True:
+    summary()
+else:
+    accounts()
+    twitterLinkPull()
+    links2DB()
+    collectHashes()
+    hashes2DB()
+    
