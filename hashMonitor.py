@@ -198,7 +198,7 @@ if args.list:
 elif args.summary == True:
     summary()
 else:
-    accounts()
+    #accounts()
     twitterLinkPull()
     links2DB()
     collectHashes()
