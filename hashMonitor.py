@@ -11,6 +11,10 @@ Ian Ahl | www.TekDefense.com | 1aN0rmus@tekDefense.com
 Version: 0.1
 
 Changelog:
+.2
+[+] Optimize database for faster hash insertion
+[+] Added option to specify a database name and path
+
 .1 
 [+] Initial Release
 
@@ -54,7 +58,9 @@ if args.list:
     else:
         print '[!] You must choose -l ANY, -l MD5, =l SHA1, or -l SHA256'
         sys.exit()
-    
+
+if args.database:
+    hashMonDB = args.database
 
 def twitterLinkPull():
     global listURLs
@@ -111,17 +117,12 @@ def hashes2DB():
     n = 0
     with con:
         cur = con.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS HASHES(Id INTEGER PRIMARY KEY, HASH TEXT, TYPE TEXT)')
+        cur.execute('CREATE TABLE IF NOT EXISTS HASHES(HASH TEXT PRIMARY KEY, TYPE TEXT)')
         con.commit()
         for i in listResults:
-            cur.execute('SELECT * FROM HASHES WHERE HASH = ?', (i[0], ))
-            check = cur.fetchone()
-            if check != None:
-                print '[-] ' + i[0] + ' is already in the DB'
-            else:
-                n = n + 1
-                print '[+] Adding ' + i[0] + ' into the DB'
-                cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
+            n = n + 1
+            print '[+] Adding ' + i[0] + ' into the DB'
+            cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
         print '[+] Added ' + str(n) + ' Hashes to the Database'
     con.commit()
     con.close()
