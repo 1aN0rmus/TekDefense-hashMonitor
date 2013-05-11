@@ -15,6 +15,7 @@ Changelog:
 [+] Optimize database for faster hash insertion
 [+] Added option to specify a database name and path
 [+] Added error handling to the hash insert to DB
+[+] Optimized link2DB function and added error handling
 
 .1 
 [+] Initial Release
@@ -78,20 +79,19 @@ def twitterLinkPull():
                 listURLs.append(URL)
 
 def links2DB():
+    print '[*] Adding links to the DB if they have not been scanned previously.'
     con = sqlite3.connect(hashMonDB)
     with con:
         cur = con.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS URLs(Id INTEGER PRIMARY KEY, URL TEXT, DATE TEXT)')
+        cur.execute('CREATE TABLE IF NOT EXISTS URLs(URL TEXT PRIMARY KEY, DATE TEXT)')
         con.commit()
         for i in listURLs:
-            cur.execute('SELECT * FROM URLs WHERE URL = ?', (i, ))
-            check = cur.fetchone()
-            if check != None:
-                print '[-] ' + i + ' has already been seen'
-            else:
-                print '[+] Adding ' + i + ' into the DB'
+            try:
                 cur.execute("INSERT INTO URLs(URL, DATE) VALUES(?,?)", (i, now))
                 listNewURLs.append(i)
+                print '[+] Adding ' + i + ' into the DB'
+            except:
+                print '[-] ' + i + ' has already been seen'
     con.commit()
     con.close()
     
@@ -114,6 +114,7 @@ def collectHashes():
         print '[-] No new URLs to search'
 
 def hashes2DB():
+    print '[*] Inserting new hashes to the DB if any are found.'
     con = sqlite3.connect(hashMonDB)
     n = 0
     with con:
@@ -154,7 +155,7 @@ def listHashes():
         #cur.execute('CREATE TABLE IF NOT EXISTS ACCOUNTS(Id INTEGER PRIMARY KEY, ACCOUNT TEXT)')
         #con.commit()
 
-print '[i] Running hashMonitor.py'
+print '[*] Running hashMonitor.py'
 twitterLinkPull()
 links2DB()
 collectHashes()
