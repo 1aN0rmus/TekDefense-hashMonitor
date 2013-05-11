@@ -8,7 +8,7 @@ hashMonitor will go to each link they tweet and scrape out MD5, SHA1, and SHA256
 @TekDefense
 Ian Ahl | www.TekDefense.com | 1aN0rmus@tekDefense.com
 
-Version: 0.1
+Version: 0.2
 
 Changelog:
 .2
