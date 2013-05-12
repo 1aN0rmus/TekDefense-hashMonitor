@@ -132,7 +132,7 @@ def hashes2DB():
                 print '[+] Adding ' + i[0] + ' to the DB'
                 cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
             except:
-                print '[-] ' + i[0] + 'already exists in database'
+                print '[-] ' + i[0] + ' already exists in database'
         print '[+] Added ' + str(n) + ' Hashes to the Database'
     con.commit()
     con.close()
