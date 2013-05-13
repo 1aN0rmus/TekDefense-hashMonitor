@@ -136,8 +136,8 @@ def hashes2DB():
         con.commit()
         for i in listResults:
             try:
-                n = n + 1
-                cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))                
+                cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
+                n = n + 1                
                 print '[+] Adding ' + i[0] + ' to the DB'
             except:
                 print '[-] ' + i[0] + ' already exists in database'
