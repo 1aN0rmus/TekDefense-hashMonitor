@@ -198,6 +198,7 @@ def summary():
         for row in rows:
             num = num + row[1]
         print '[+] You have scraped a total of ' + str(num) + ' URLs listed in this database!'
+
 def hashRemove():
     print '[*] Checking to see if there are any matches between the database and ' + potFile + '. Any matches will be removed from the database!'
     global listResults
@@ -214,16 +215,15 @@ def hashRemove():
     listResults = list(set(listResults))
     con = sqlite3.connect(hashMonDB)
     with con:
+        n = 0
         cur = con.cursor()
         for i in listResults:
             cur.execute('SELECT HASH FROM HASHES WHERE HASH = ?', (i, ))
-            
             row = cur.fetchone()
-            n = 0
             if row != None:
                 print '[-] ' + row[0] + 'is being removed from the database'
                 cur.execute('DELETE FROM HASHES WHERE HASH = ?', (row[0], ))
-                n = n +1
+                n = n + 1
         print '[+] Removed ' + str(n) + ' hashes from the database'
 
 print '[*] Running hashMonitor.py'
@@ -243,5 +243,5 @@ else:
     collectHashes()
     hashes2DB()
 
-
+#hashRemove()
    
