@@ -19,12 +19,16 @@ Changelog:
 [+] Fixed a problem with listing hashes
 [+] Added a summary option
 [+] Started an account function, not done yet though!
+[+] Fixed a bug in the hashes2DB that gave an incorrect count on how many hashes were added to the database
+[+] Added a function to remove hashes from the database. Will take a .pot or any other text file with hashes in it.
 
 .1 
 [+] Initial Release
 
 TODO
-[-] Let users add accounts to monitor
+[-] Let users add/remove accounts to monitor
+[-] Remove hashes with a .pot
+[-] Collect the real URL as well as the shortened one.
 '''
 
 import twitter, sqlite3, re, datetime, httplib2, argparse, sys
@@ -50,6 +54,7 @@ parser.add_argument('-o', '--output', help='This option will output the results 
 parser.add_argument('-l', '--list', help='This option will return a list of all the hashes in the database. Use ALL, MD5, SHA1, or SHA256. ./hashMonitor.py -l MD5')
 parser.add_argument('-s', '--summary', action='store_true', default=False, help='This option will display stats on URLs scanned and Hashes collected ./hashMonitor.py -s')
 parser.add_argument('-a', '--add', help='This option will add a twitter account to the monitor db ./hashMonitor.py -a TWITTERHANDLE')
+parser.add_argument('-r', '--remove', help='This option will remove hashes from the database from any text base file that includes hashes like a .pot file ./hashMonitor.py -d hascat.pot')
 args = parser.parse_args()
 
 if args.output:
@@ -90,13 +95,16 @@ def links2DB():
         cur = con.cursor()
         cur.execute('CREATE TABLE IF NOT EXISTS URLs(URL TEXT PRIMARY KEY, DATE TEXT)')
         con.commit()
+        n = 0
         for i in listURLs:
             try:
                 cur.execute("INSERT INTO URLs(URL, DATE) VALUES(?,?)", (i, now))
                 listNewURLs.append(i)
                 print '[+] Adding ' + i + ' into the DB'
             except:
-                print '[-] ' + i + ' has already been seen'
+                n = n + 1
+        if n > 0:
+            print '[-] ' + str(n) + ' links were previously scanned' 
     con.commit()
     con.close()
     
@@ -129,8 +137,8 @@ def hashes2DB():
         for i in listResults:
             try:
                 n = n + 1
+                cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))                
                 print '[+] Adding ' + i[0] + ' to the DB'
-                cur.execute("INSERT INTO HASHES(HASH, TYPE) VALUES(?,?)", (i[0], i[1][0]))
             except:
                 print '[-] ' + i[0] + ' already exists in database'
         print '[+] Added ' + str(n) + ' Hashes to the Database'
@@ -190,17 +198,50 @@ def summary():
         for row in rows:
             num = num + row[1]
         print '[+] You have scraped a total of ' + str(num) + ' URLs listed in this database!'
+def hashRemove():
+    print '[*] Checking to see if there are any matches between the database and ' + potFile + '. Any matches will be removed from the database!'
+    global listResults
+    fileImport =open(potFile)
+    strFile=''  
+    for line in fileImport:
+        strFile += line
+    regVal = MD5
+    regexValue = re.compile(regVal)
+    regexSearch = re.findall(regexValue,strFile)
+    listResults = []
+    for j in regexSearch:
+        listResults.append(j)
+    listResults = list(set(listResults))
+    con = sqlite3.connect(hashMonDB)
+    with con:
+        cur = con.cursor()
+        for i in listResults:
+            cur.execute('SELECT HASH FROM HASHES WHERE HASH = ?', (i, ))
+            
+            row = cur.fetchone()
+            n = 0
+            if row != None:
+                print '[-] ' + row[0] + 'is being removed from the database'
+                cur.execute('DELETE FROM HASHES WHERE HASH = ?', (row[0], ))
+                n = n +1
+        print '[+] Removed ' + str(n) + ' hashes from the database'
 
 print '[*] Running hashMonitor.py'
+
 
 if args.list:
     listHashes()
 elif args.summary == True:
     summary()
+elif args.remove:
+    potFile = args.remove
+    hashRemove()
 else:
     #accounts()
     twitterLinkPull()
     links2DB()
     collectHashes()
     hashes2DB()
-    
+
+
+   
