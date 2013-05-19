@@ -1,8 +1,8 @@
 #!/usr/bin/env python                                                                                                                                                                                      
 
 '''
-This is hashMonitor! This tool will collect hashes from data breeches reported via Twitter.
-This works by checkinng popular accounts on twitter like @Dumpmon and @PastebinDorks.
+This is hashMonitor! This tool will collect hashes from data breeches reported via Twitter and specific web resources.
+This works by checking popular accounts on twitter like @Dumpmon and @PastebinDorks and web resources.
 hashMonitor will go to each link they tweet and scrape out MD5, SHA1, and SHA256 Hashes.
 
 @TekDefense
@@ -27,15 +27,14 @@ Changelog:
 [+] Initial Release
 
 TODO
-[-] Let users add/remove accounts to monitor
-[-] Remove hashes with a .pot
+[-] Let users add/remove accounts/URLs to monitor
 [-] Collect the real URL as well as the shortened one.
 '''
 
 import twitter, sqlite3, re, datetime, httplib2, argparse, sys
 
 listMonitor = ['Dumpmon', 'PastebinDorks', 'TekDefense']
-listURLMonitor = ['http://andrewmohawk.com/pasteLertV2/rss.php?q=%40gmail.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=%40yahoo.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=MySQL%23!%23password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=e10adc3949ba59abbe56e057f20f883e%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=Password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=db%23!%23leak%23!%23']
+listURLMonitor = ['http://www.leakedin.com/', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=%40gmail.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=%40yahoo.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=MySQL%23!%23password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=e10adc3949ba59abbe56e057f20f883e%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=Password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=db%23!%23leak%23!%23']
 listURLs = []
 api = twitter.Api()
 hashMonDB = 'hashMon.db'
@@ -53,10 +52,10 @@ hashList = False
 parser = argparse.ArgumentParser(description='hashMonitor is a tool that will collect hashes from data breeches reported via Twitter')
 parser.add_argument('-d', '--database', help='This option is used to specify a database name. ./hashMonitor.py -d databaseName.db')
 parser.add_argument('-o', '--output', help='This option will output the results to a file. ./hashMonitor.py -o output.txt')
-parser.add_argument('-l', '--list', help='This option will return a list of all the hashes in the database. Use ALL, MD5, SHA1, or SHA256. ./hashMonitor.py -l MD5')
+parser.add_argument('-l', '--list', help='This option will return a list of all the hashes in the database. Use ANY, MD5, SHA1, or SHA256. ./hashMonitor.py -l MD5')
 parser.add_argument('-s', '--summary', action='store_true', default=False, help='This option will display stats on URLs scanned and Hashes collected ./hashMonitor.py -s')
 parser.add_argument('-a', '--add', help='This option will add a twitter account to the monitor db ./hashMonitor.py -a TWITTERHANDLE')
-parser.add_argument('-r', '--remove', help='This option will remove hashes from the database from any text base file that includes hashes like a .pot file ./hashMonitor.py -d hascat.pot')
+parser.add_argument('-r', '--remove', help='This option will remove hashes from the database from any text base file that includes hashes like a .pot file ./hashMonitor.py -r hascat.pot')
 args = parser.parse_args()
 
 if args.output:
@@ -101,16 +100,19 @@ def webLinkPull():
             h = httplib2.Http(".cache")
             resp, content = h.request((url), "GET")
             contentString = (str(content))
-            regURL = '(http:\/\/www\.pastebin.com\/\w{1,12})'
+            regURL = 'http:\/\/www\.pastebin.com\/\w{1,12}'
+            regURL2 = 'http:\/\/pastebin.com\/raw\.php...\w{1,10}'
             regURLComp = re.compile(regURL)
             regexURLSearch = re.findall(regURLComp, contentString) 
+            regURLComp2 = re.compile(regURL2)
+            regexURLSearch2 = re.findall(regURLComp2, contentString)
             for i in regexURLSearch:
-                listURLs.append(i)          
+                listURLs.append(i)   
+            for i in regexURLSearch2:
+                listURLs.append(i)        
         except:
             print '[-] Unable to pull results for ' + i
     
-    
-
 def links2DB():
     print '[*] Adding links to the DB if they have not been scanned previously.'
     con = sqlite3.connect(hashMonDB)
@@ -266,5 +268,3 @@ else:
     links2DB()
     collectHashes()
     hashes2DB()
-
-   
