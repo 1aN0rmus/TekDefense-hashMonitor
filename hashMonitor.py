@@ -21,6 +21,7 @@ Changelog:
 [+] Started an account function, not done yet though!
 [+] Fixed a bug in the hashes2DB that gave an incorrect count on how many hashes were added to the database
 [+] Added a function to remove hashes from the database. Will take a .pot or any other text file with hashes in it.
+[+] Added monitoring of of web resources as well. Mostly using @AndrewMohawk's pasteLert.
 
 .1 
 [+] Initial Release
@@ -34,6 +35,7 @@ TODO
 import twitter, sqlite3, re, datetime, httplib2, argparse, sys
 
 listMonitor = ['Dumpmon', 'PastebinDorks', 'TekDefense']
+listURLMonitor = ['http://andrewmohawk.com/pasteLertV2/rss.php?q=%40gmail.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=%40yahoo.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=MySQL%23!%23password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=e10adc3949ba59abbe56e057f20f883e%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=Password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=db%23!%23leak%23!%23']
 listURLs = []
 api = twitter.Api()
 hashMonDB = 'hashMon.db'
@@ -79,14 +81,35 @@ def twitterLinkPull():
     
     for i in listMonitor:
         users = i
-        statuses = api.GetUserTimeline(users)
-        for s in statuses:
-            regURL = '(http:\/\/t\.co\/\w{1,12})'
+        try:
+            statuses = api.GetUserTimeline(users)
+            for s in statuses:
+                regURL = '(http:\/\/t\.co\/\w{1,12})'
+                regURLComp = re.compile(regURL)
+                regexURLSearch = re.search(regURLComp, str(s))
+                if regexURLSearch != None:    
+                    URL = regexURLSearch.group()
+                    listURLs.append(URL)
+        except:
+            print '[-] Unable to pull twitter results for ' + i
+
+def webLinkPull():
+    global listURLs
+    for i in listURLMonitor:
+        url = i
+        try:
+            h = httplib2.Http(".cache")
+            resp, content = h.request((url), "GET")
+            contentString = (str(content))
+            regURL = '(http:\/\/www\.pastebin.com\/\w{1,12})'
             regURLComp = re.compile(regURL)
-            regexURLSearch = re.search(regURLComp, str(s))
-            if regexURLSearch != None:    
-                URL = regexURLSearch.group()
-                listURLs.append(URL)
+            regexURLSearch = re.findall(regURLComp, contentString) 
+            for i in regexURLSearch:
+                listURLs.append(i)          
+        except:
+            print '[-] Unable to pull results for ' + i
+    
+    
 
 def links2DB():
     print '[*] Adding links to the DB if they have not been scanned previously.'
@@ -239,9 +262,9 @@ elif args.remove:
 else:
     #accounts()
     twitterLinkPull()
+    webLinkPull()
     links2DB()
     collectHashes()
     hashes2DB()
 
-#hashRemove()
    
