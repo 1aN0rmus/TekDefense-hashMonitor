@@ -8,9 +8,17 @@ hashMonitor will go to each link they tweet and scrape out MD5, SHA1, and SHA256
 @TekDefense
 Ian Ahl | www.TekDefense.com | 1aN0rmus@tekDefense.com
 
-Version: 0.2
+Version: 0.3
 
 Changelog:
+
+.3
+The twitter API now requires an API to view tweets. To avoid having 
+eveyone generate an API key I instead modified the code to use the
+twitter website.
+[+] See above
+
+
 .2
 [+] Optimize database for faster hash insertion
 [+] Added option to specify a database name and path
@@ -31,10 +39,10 @@ TODO
 [-] Collect the real URL as well as the shortened one.
 '''
 
-import twitter, sqlite3, re, datetime, httplib2, argparse, sys
+import twitter, sqlite3, re, datetime, httplib2, argparse, sys, urllib, urllib2
 
 listMonitor = ['Dumpmon', 'PastebinDorks', 'TekDefense']
-listURLMonitor = ['http://www.leakedin.com/', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=%40gmail.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=%40yahoo.com%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=MySQL%23!%23password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=e10adc3949ba59abbe56e057f20f883e%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=Password%23!%23', 'http://andrewmohawk.com/pasteLertV2/rss.php?q=db%23!%23leak%23!%23']
+listURLMonitor = ['https://twitter.com/PastebinDorks', 'https://twitter.com/dumpmon', 'http://www.leakedin.com/']
 listURLs = []
 api = twitter.Api()
 hashMonDB = 'hashMon.db'
@@ -96,10 +104,13 @@ def webLinkPull():
     global listURLs
     for i in listURLMonitor:
         url = i
+        print url
         try:
-            h = httplib2.Http(".cache")
-            resp, content = h.request((url), "GET")
-            contentString = (str(content))
+            proxy = urllib2.ProxyHandler()
+            opener = urllib2.build_opener(proxy)
+            response = opener.open(url)
+            content = response.read()
+            contentString = str(content)
             regURL = 'http:\/\/www\.pastebin.com\/\w{1,12}'
             regURL2 = 'http:\/\/pastebin.com\/raw\.php...\w{1,10}'
             regURLComp = re.compile(regURL)
@@ -107,9 +118,9 @@ def webLinkPull():
             regURLComp2 = re.compile(regURL2)
             regexURLSearch2 = re.findall(regURLComp2, contentString)
             for i in regexURLSearch:
-                listURLs.append(i)   
+                listURLs.append(i)  
             for i in regexURLSearch2:
-                listURLs.append(i)        
+                listURLs.append(i)      
         except:
             print '[-] Unable to pull results for ' + i
     
@@ -138,16 +149,21 @@ def collectHashes():
     if len(listNewURLs) > 0:
         print '[+] Searching for hashes in the new URLs'
         for URL in listNewURLs:
-            h = httplib2.Http(".cache")
-            resp, content = h.request((URL), "GET")
-            contentString = (str(content))
-            for reg in listTypes:
-                regVal = reg[1]
-                regexValue = re.compile(regVal)
-                regexSearch = re.findall(regexValue,contentString)
-                for result in regexSearch:
-                    listResults.append((result, reg))
-            listResults = list(set(listResults)) 
+            try:
+                proxy = urllib2.ProxyHandler()
+                opener = urllib2.build_opener(proxy)
+                response = opener.open(URL)
+                content = response.read()
+                contentString = str(content)
+                for reg in listTypes:
+                    regVal = reg[1]
+                    regexValue = re.compile(regVal)
+                    regexSearch = re.findall(regexValue,contentString)
+                    for result in regexSearch:
+                        listResults.append((result, reg))
+            except:
+                print '[-] Unable to collect hashes for ' + URL
+        listResults = list(set(listResults)) 
     else:
         print '[-] No new URLs to search'
 
@@ -263,7 +279,7 @@ elif args.remove:
     hashRemove()
 else:
     #accounts()
-    twitterLinkPull()
+    #twitterLinkPull()
     webLinkPull()
     links2DB()
     collectHashes()
