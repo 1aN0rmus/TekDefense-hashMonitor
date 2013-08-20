@@ -8,7 +8,7 @@ hashMonitor will go to each link they tweet and scrape out MD5, SHA1, and SHA256
 @TekDefense
 Ian Ahl | www.TekDefense.com | 1aN0rmus@tekDefense.com
 
-Version: 0.3
+Version: 0.3.1
 
 Changelog:
 
@@ -17,6 +17,9 @@ The twitter API now requires an API to view tweets. To avoid having
 eveyone generate an API key I instead modified the code to use the
 twitter website.
 [+] See above
+[+] Proxy support
+[+] URLLIB2 instead of httplib2
+[+] Spelling corrections, thanks @tekwizz123
 
 
 .2
@@ -63,7 +66,7 @@ parser.add_argument('-o', '--output', help='This option will output the results 
 parser.add_argument('-l', '--list', help='This option will return a list of all the hashes in the database. Use ANY, MD5, SHA1, or SHA256. ./hashMonitor.py -l MD5')
 parser.add_argument('-s', '--summary', action='store_true', default=False, help='This option will display stats on URLs scanned and Hashes collected ./hashMonitor.py -s')
 parser.add_argument('-a', '--add', help='This option will add a twitter account to the monitor db ./hashMonitor.py -a TWITTERHANDLE')
-parser.add_argument('-r', '--remove', help='This option will remove hashes from the database from any text base file that includes hashes like a .pot file ./hashMonitor.py -r hascat.pot')
+parser.add_argument('-r', '--remove', help='This option will remove hashes from the database from any text base file that includes hashes like a .pot file ./hashMonitor.py -r hashcat.pot')
 args = parser.parse_args()
 
 if args.output:
@@ -262,7 +265,7 @@ def hashRemove():
             cur.execute('SELECT HASH FROM HASHES WHERE HASH = ?', (i, ))
             row = cur.fetchone()
             if row != None:
-                print '[-] ' + row[0] + 'is being removed from the database'
+                print '[-] ' + row[0] + ' is being removed from the database'
                 cur.execute('DELETE FROM HASHES WHERE HASH = ?', (row[0], ))
                 n = n + 1
         print '[+] Removed ' + str(n) + ' hashes from the database'
