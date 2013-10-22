@@ -8,7 +8,7 @@ hashMonitor will go to each link they tweet and scrape out MD5, SHA1, and SHA256
 @TekDefense
 Ian Ahl | www.TekDefense.com | 1aN0rmus@tekDefense.com
 
-Version: 0.3.1
+Version: 0.3.2
 
 Changelog:
 
@@ -20,6 +20,7 @@ twitter website.
 [+] Proxy support
 [+] URLLIB2 instead of httplib2
 [+] Spelling corrections, thanks @tekwizz123
+[+] Removed the import and the functions for the twitter API
 
 
 .2
@@ -38,16 +39,15 @@ twitter website.
 [+] Initial Release
 
 TODO
-[-] Let users add/remove accounts/URLs to monitor
+
 [-] Collect the real URL as well as the shortened one.
 '''
 
-import twitter, sqlite3, re, datetime, httplib2, argparse, sys, urllib, urllib2
+import sqlite3, re, datetime, httplib2, argparse, sys, urllib, urllib2
 
 listMonitor = ['Dumpmon', 'PastebinDorks', 'TekDefense']
 listURLMonitor = ['https://twitter.com/PastebinDorks', 'https://twitter.com/dumpmon', 'http://www.leakedin.com/']
 listURLs = []
-api = twitter.Api()
 hashMonDB = 'hashMon.db'
 today = datetime.datetime.now()
 now = today.strftime("%Y-%m-%d %H:%M")
@@ -85,23 +85,6 @@ if args.list:
 
 if args.database:
     hashMonDB = args.database
-
-def twitterLinkPull():
-    global listURLs
-    
-    for i in listMonitor:
-        users = i
-        try:
-            statuses = api.GetUserTimeline(users)
-            for s in statuses:
-                regURL = '(http:\/\/t\.co\/\w{1,12})'
-                regURLComp = re.compile(regURL)
-                regexURLSearch = re.search(regURLComp, str(s))
-                if regexURLSearch != None:    
-                    URL = regexURLSearch.group()
-                    listURLs.append(URL)
-        except:
-            print '[-] Unable to pull twitter results for ' + i
 
 def webLinkPull():
     global listURLs
@@ -205,26 +188,7 @@ def listHashes():
                 for i in results:
                     print i[0]
 
-def accounts():
-    con = sqlite3.connect(hashMonDB)
-    with con:
-        cur = con.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS ACCOUNTS(ACCOUNT TEXT PRIMARY KEY)')
-        con.commit()
-        for i in listMonitor:
-            try:
-                cur.execute("INSERT INTO ACCOUNTS(ACCOUNT) VALUES(?)", (i,))
-                print '[+] ' + i + ' has been added to the Monitor list'
-            except:
-                print '[+] Monitoring ' + i
-        con.commit()
-        if args.add:
-            twitterHandle = args.add
-            try:
-                cur.execute("INSERT INTO ACCOUNTS(ACCOUNT) VALUES(?)", (twitterHandle,))
-                print '[+] ' + twitterHandle + ' has been added to the Monitor list'
-            except:
-                print '[+] Monitoring ' + twitterHandle
+
 def summary():
     con = sqlite3.connect(hashMonDB)
     with con:
